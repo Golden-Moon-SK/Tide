@@ -1,4 +1,14 @@
-import { db, INBOX_ID, type Priority, type Project, type Task } from "./schema";
+import {
+  db,
+  INBOX_ID,
+  PROJECT_COLORS,
+  type Label,
+  type Priority,
+  type Project,
+  type Task,
+} from "./schema";
+import type { ParsedCapture } from "@/lib/parse";
+import { nextOccurrence, parseRecurrenceRule } from "@/lib/recurrence";
 
 /**
  * Every write to the database goes through this file. Components never import
@@ -77,12 +87,18 @@ export async function updateTask(
 /**
  * Toggles completion. Subtasks follow the parent down, because a completed task
  * with open children is a lie.
+ *
+ * Completing a repeating task also inserts its next occurrence, so the one you
+ * finished stays finished and history is preserved rather than rewritten.
  */
 export async function setCompleted(
   id: string,
   completed: boolean,
 ): Promise<void> {
   await db.transaction("rw", db.tasks, async () => {
+    const task = await db.tasks.get(id);
+    if (!task) return;
+
     await db.tasks.update(id, {
       completed,
       completedAt: completed ? Date.now() : undefined,
@@ -94,6 +110,21 @@ export async function setCompleted(
         completedAt: completed ? Date.now() : undefined,
       });
     }
+
+    if (!completed || !task.recurrence) return;
+    const rule = parseRecurrenceRule(task.recurrence);
+    if (!rule) return;
+
+    const next: Task = {
+      ...task,
+      id: newId(),
+      completed: false,
+      completedAt: undefined,
+      createdAt: Date.now(),
+      sortOrder: task.sortOrder + 0.5,
+      dueDate: nextOccurrence(rule, task.dueDate ?? Date.now()),
+    };
+    await db.tasks.add(next);
   });
 }
 
@@ -152,5 +183,69 @@ export async function deleteProject(id: string): Promise<void> {
       await db.tasks.update(task.id, { projectId: INBOX_ID });
     }
     await db.projects.delete(id);
+  });
+}
+
+/** Matches an existing project by name, case-insensitively, or makes one. */
+export async function findOrCreateProject(name: string): Promise<string> {
+  const wanted = name.trim().toLowerCase();
+  const existing = (await db.projects.toArray()).find(
+    (p) => p.name.toLowerCase() === wanted,
+  );
+  if (existing) return existing.id;
+
+  // Colour is assigned round-robin so a new project is distinguishable
+  // immediately without asking the user to pick one mid-capture.
+  const count = await db.projects.count();
+  return createProject(name, PROJECT_COLORS[count % PROJECT_COLORS.length]);
+}
+
+/** Matches an existing label by name, case-insensitively, or makes one. */
+export async function findOrCreateLabel(name: string): Promise<string> {
+  const wanted = name.trim().toLowerCase();
+  const existing = (await db.labels.toArray()).find(
+    (l) => l.name.toLowerCase() === wanted,
+  );
+  if (existing) return existing.id;
+
+  const count = await db.labels.count();
+  const label: Label = {
+    id: newId(),
+    name: name.trim(),
+    color: PROJECT_COLORS[count % PROJECT_COLORS.length],
+    createdAt: Date.now(),
+  };
+  await db.labels.add(label);
+  return label.id;
+}
+
+/**
+ * Commits a parsed capture. Projects and labels named with "#" and "@" are
+ * created on the spot rather than rejected — capture should never stop to ask
+ * a question.
+ */
+export async function createTaskFromCapture(
+  parsed: ParsedCapture,
+  fallbackProjectId?: string,
+): Promise<string | undefined> {
+  if (!parsed.title) return undefined;
+
+  const projectId = parsed.projectName
+    ? await findOrCreateProject(parsed.projectName)
+    : fallbackProjectId;
+
+  const labelIds: string[] = [];
+  for (const name of parsed.labelNames) {
+    labelIds.push(await findOrCreateLabel(name));
+  }
+
+  return createTask({
+    title: parsed.title,
+    dueDate: parsed.dueDate,
+    hasTime: parsed.hasTime,
+    priority: parsed.priority,
+    projectId,
+    labelIds,
+    recurrence: parsed.recurrence,
   });
 }
