@@ -8,8 +8,10 @@
 @theme inline {
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
+  --color-surface-sidebar: var(--surface-sidebar);
   --color-surface-sunken: var(--surface-sunken);
   --color-surface-hover: var(--surface-hover);
+  --color-surface-selected: var(--surface-selected);
 
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
@@ -28,8 +30,19 @@
   --color-priority-3: var(--priority-3);
   --color-priority-4: var(--priority-4);
 
+  --color-project-teal: var(--project-teal);
+  --color-project-blue: var(--project-blue);
+  --color-project-violet: var(--project-violet);
+  --color-project-magenta: var(--project-magenta);
+  --color-project-red: var(--project-red);
+  --color-project-orange: var(--project-orange);
+  --color-project-green: var(--project-green);
+  --color-project-grey: var(--project-grey);
+
   --color-danger: var(--danger);
   --color-overdue: var(--overdue);
+
+  --shadow-soft: var(--elevation-soft);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -51,7 +64,7 @@ body {
 }
 
 body {
-  background: var(--surface);
+  background: var(--surface-sidebar);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
@@ -61,6 +74,15 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/*
+ * Scrollbars are chrome, so they get the chrome palette rather than the OS's.
+ * Overlay-style on macOS already; this is for the panes that scroll on Windows.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {

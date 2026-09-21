@@ -56,7 +56,15 @@ JSON export/import is the only backup and is not optional.
   `text-[17px]` in a feature file is a bug.
 - Both themes are authored deliberately in `tokens.css`. Dark mode is designed,
   not derived.
-- Color carries meaning only: priority and project. Never decoration.
+- Color carries meaning only: priority and project. Never decoration. Project
+  colours are `--project-<name>`, one per `PROJECT_COLORS` entry; the name-to-
+  class lookup lives in `src/design/components/ProjectGlyph.tsx`, because
+  Tailwind only emits utilities it can see written out.
+- The sidebar is the ground (`bg-surface-sidebar`) and the content column is
+  lighter than it (`bg-surface`). That one step of contrast is what makes Tide
+  read as an app rather than a page — don't flatten it.
+- Light and dark are a real setting, not a media query we inherit:
+  `useTheme()` plus the pre-paint `THEME_SCRIPT` in the root layout.
 - Completion is a spring animation and the row collapsing, not a checkbox
   flipping. Use `motion`.
 - Keyboard-first: `/` capture, `j`/`k` move, `x` complete, `e` schedule,

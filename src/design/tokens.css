@@ -8,40 +8,47 @@
  * The palette is four warm greys — a single sand ramp, from ink to paper. Every
  * surface, line and text step is that ramp or a mix of two of its stops, so the
  * chrome of the app is quiet by construction and the only saturated colour on
- * screen is priority.
+ * screen is priority and project.
+ *
+ * The ground is light: the content column is nearly white and the sidebar is
+ * the sand stop, one shade warmer. That difference is what makes the app read
+ * as an app — a place to work, and a place that holds it — rather than a page.
  *
  * Both themes are authored deliberately. Dark is not a derived inversion: the
  * ramp is re-anchored below the ink stop, so the darks stay warm instead of
- * going to neutral black, and the accent climbs the ramp rather than glowing.
+ * going to neutral black, and the sidebar sinks below the content instead of
+ * rising above it.
  */
 
 :root {
-  /* The ramp. These four values are the entire palette. */
-  --sand-ink: #4f4d46;
-  --sand-stone: #787569;
-  --sand-clay: #c9c5b1;
-  --sand-paper: #ede8d0;
+  /* The ramp. These four values are the entire neutral palette. */
+  --sand-ink: #3b3830;
+  --sand-stone: #837c6e;
+  --sand-clay: #ddd6c4;
+  --sand-paper: #f4f0e4;
 
-  /* Surfaces — paper, with card stock lifted a touch above the page */
-  --surface: var(--sand-paper);
-  --surface-raised: color-mix(in srgb, var(--sand-paper) 55%, #fff);
-  --surface-sunken: color-mix(in srgb, var(--sand-clay) 45%, var(--sand-paper));
-  --surface-hover: color-mix(in srgb, var(--sand-clay) 30%, var(--sand-paper));
+  /* Surfaces — the content column is the lightest thing on screen */
+  --surface: color-mix(in srgb, var(--sand-paper) 26%, #fff);
+  --surface-raised: #fff;
+  --surface-sidebar: color-mix(in srgb, var(--sand-paper) 88%, #fff);
+  --surface-sunken: var(--sand-paper);
+  --surface-hover: color-mix(in srgb, var(--sand-clay) 32%, var(--sand-paper));
+  --surface-selected: color-mix(in srgb, var(--sand-clay) 58%, var(--sand-paper));
 
   /* Lines */
-  --border: color-mix(in srgb, var(--sand-clay) 70%, var(--sand-paper));
+  --border: color-mix(in srgb, var(--sand-clay) 60%, var(--sand-paper));
   --border-strong: var(--sand-clay);
 
   /* Text — one ramp, three steps */
   --text: var(--sand-ink);
   --text-muted: var(--sand-stone);
-  --text-faint: color-mix(in srgb, var(--sand-stone) 78%, var(--sand-clay));
+  --text-faint: color-mix(in srgb, var(--sand-stone) 70%, var(--sand-clay));
 
   /* Accent — the ink stop. Emphasis is weight and contrast, not hue. */
   --accent: var(--sand-ink);
-  --accent-hover: color-mix(in srgb, var(--sand-ink) 80%, #000);
-  --accent-contrast: var(--sand-paper);
-  --accent-soft: color-mix(in srgb, var(--sand-clay) 55%, var(--sand-paper));
+  --accent-hover: color-mix(in srgb, var(--sand-ink) 82%, #000);
+  --accent-contrast: color-mix(in srgb, var(--sand-paper) 40%, #fff);
+  --accent-soft: color-mix(in srgb, var(--sand-clay) 52%, var(--sand-paper));
 
   /* Priority — meaning, never decoration. Warmed to sit on sand. */
   --priority-1: #b4442f;
@@ -49,63 +56,108 @@
   --priority-3: #4a6f8a;
   --priority-4: var(--sand-clay);
 
+  /* Project — the other meaning colour. One stop per PROJECT_COLORS name. */
+  --project-teal: #2f8f84;
+  --project-blue: #44749f;
+  --project-violet: #7a67b8;
+  --project-magenta: #a8568d;
+  --project-red: #b4442f;
+  --project-orange: #bc7c2c;
+  --project-green: #5f8c45;
+  --project-grey: var(--sand-stone);
+
   /* Status */
   --danger: #b4442f;
   --overdue: #b4442f;
+
+  /* Elevation. One soft shadow, used sparingly — paper does not float. The
+   * token is named for what it is; globals.css maps it onto `shadow-soft`. */
+  --elevation-soft: 0 1px 2px color-mix(in srgb, var(--sand-ink) 8%, transparent),
+    0 8px 24px -12px color-mix(in srgb, var(--sand-ink) 18%, transparent);
 }
 
+/*
+ * Dark. The ramp is re-anchored below the ink stop and the sidebar goes *under*
+ * the content rather than over it, which is the way depth reads in the dark.
+ */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --surface: color-mix(in srgb, var(--sand-ink) 42%, #000);
-    --surface-raised: color-mix(in srgb, var(--sand-ink) 58%, #000);
-    --surface-sunken: color-mix(in srgb, var(--sand-ink) 28%, #000);
-    --surface-hover: color-mix(in srgb, var(--sand-ink) 70%, #000);
+    --surface: color-mix(in srgb, var(--sand-ink) 46%, #000);
+    --surface-raised: color-mix(in srgb, var(--sand-ink) 62%, #000);
+    --surface-sidebar: color-mix(in srgb, var(--sand-ink) 30%, #000);
+    --surface-sunken: color-mix(in srgb, var(--sand-ink) 22%, #000);
+    --surface-hover: color-mix(in srgb, var(--sand-ink) 72%, #000);
+    --surface-selected: color-mix(in srgb, var(--sand-ink) 86%, #000);
 
-    --border: color-mix(in srgb, var(--sand-stone) 40%, #000);
-    --border-strong: color-mix(in srgb, var(--sand-stone) 72%, #000);
+    --border: color-mix(in srgb, var(--sand-stone) 34%, #000);
+    --border-strong: color-mix(in srgb, var(--sand-stone) 64%, #000);
 
     --text: var(--sand-paper);
     --text-muted: var(--sand-clay);
     --text-faint: var(--sand-stone);
 
-    --accent: var(--sand-clay);
-    --accent-hover: var(--sand-paper);
+    --accent: var(--sand-paper);
+    --accent-hover: #fff;
     --accent-contrast: var(--sand-ink);
-    --accent-soft: color-mix(in srgb, var(--sand-stone) 34%, #000);
+    --accent-soft: color-mix(in srgb, var(--sand-stone) 30%, #000);
 
     --priority-1: #e08874;
     --priority-2: #d3a459;
     --priority-3: #8aabc4;
     --priority-4: var(--sand-stone);
 
+    --project-teal: #63bcb0;
+    --project-blue: #85aed6;
+    --project-violet: #a696e0;
+    --project-magenta: #d38bbc;
+    --project-red: #e08874;
+    --project-orange: #d9a45f;
+    --project-green: #97bd79;
+    --project-grey: var(--sand-clay);
+
     --danger: #e08874;
     --overdue: #e08874;
+
+    --elevation-soft: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
   }
 }
 
 [data-theme="dark"] {
-  --surface: color-mix(in srgb, var(--sand-ink) 42%, #000);
-  --surface-raised: color-mix(in srgb, var(--sand-ink) 58%, #000);
-  --surface-sunken: color-mix(in srgb, var(--sand-ink) 28%, #000);
-  --surface-hover: color-mix(in srgb, var(--sand-ink) 70%, #000);
+  --surface: color-mix(in srgb, var(--sand-ink) 46%, #000);
+  --surface-raised: color-mix(in srgb, var(--sand-ink) 62%, #000);
+  --surface-sidebar: color-mix(in srgb, var(--sand-ink) 30%, #000);
+  --surface-sunken: color-mix(in srgb, var(--sand-ink) 22%, #000);
+  --surface-hover: color-mix(in srgb, var(--sand-ink) 72%, #000);
+  --surface-selected: color-mix(in srgb, var(--sand-ink) 86%, #000);
 
-  --border: color-mix(in srgb, var(--sand-stone) 40%, #000);
-  --border-strong: color-mix(in srgb, var(--sand-stone) 72%, #000);
+  --border: color-mix(in srgb, var(--sand-stone) 34%, #000);
+  --border-strong: color-mix(in srgb, var(--sand-stone) 64%, #000);
 
   --text: var(--sand-paper);
   --text-muted: var(--sand-clay);
   --text-faint: var(--sand-stone);
 
-  --accent: var(--sand-clay);
-  --accent-hover: var(--sand-paper);
+  --accent: var(--sand-paper);
+  --accent-hover: #fff;
   --accent-contrast: var(--sand-ink);
-  --accent-soft: color-mix(in srgb, var(--sand-stone) 34%, #000);
+  --accent-soft: color-mix(in srgb, var(--sand-stone) 30%, #000);
 
   --priority-1: #e08874;
   --priority-2: #d3a459;
   --priority-3: #8aabc4;
   --priority-4: var(--sand-stone);
 
+  --project-teal: #63bcb0;
+  --project-blue: #85aed6;
+  --project-violet: #a696e0;
+  --project-magenta: #d38bbc;
+  --project-red: #e08874;
+  --project-orange: #d9a45f;
+  --project-green: #97bd79;
+  --project-grey: var(--sand-clay);
+
   --danger: #e08874;
   --overdue: #e08874;
+
+  --elevation-soft: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
 }

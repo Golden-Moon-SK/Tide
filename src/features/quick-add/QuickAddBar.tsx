@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { createTask } from "@/db/mutations";
 
 /**
@@ -10,9 +10,17 @@ import { createTask } from "@/db/mutations";
  * Phase 1 takes the title verbatim. Phase 2 adds the deterministic parser, and
  * the parsed tokens will render as chips inline right here.
  */
-export function QuickAddBar({ projectId }: { projectId?: string }) {
+export function QuickAddBar({
+  projectId,
+  inputRef: externalRef,
+}: {
+  projectId?: string;
+  /** Lets the shell's "Add task" button put the cursor here. */
+  inputRef?: RefObject<HTMLInputElement | null>;
+}) {
   const [value, setValue] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const localRef = useRef<HTMLInputElement>(null);
+  const inputRef = externalRef ?? localRef;
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -28,7 +36,7 @@ export function QuickAddBar({ projectId }: { projectId?: string }) {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [inputRef]);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -50,7 +58,7 @@ export function QuickAddBar({ projectId }: { projectId?: string }) {
         }}
         placeholder="Add a task"
         aria-label="Add a task"
-        className="text-task w-full rounded-xl border border-border bg-surface-raised py-3 pr-16 pl-4 text-text placeholder:text-faint focus:border-accent focus:outline-none"
+        className="text-task w-full rounded-xl border border-border bg-surface-raised py-3 pr-16 pl-4 text-text shadow-soft transition-colors placeholder:text-faint focus:border-border-strong focus:outline-none"
       />
       <kbd className="text-meta pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 rounded border border-border px-1.5 py-0.5 text-faint">
         /
