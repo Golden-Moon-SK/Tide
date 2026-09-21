@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { ListTree, Repeat } from "lucide-react";
 import type { Task } from "@/db/schema";
 import { PriorityDot } from "./PriorityDot";
 import { DateChip } from "./DateChip";
@@ -13,12 +14,15 @@ import { DateChip } from "./DateChip";
 export function TaskRow({
   task,
   projectName,
+  progress,
   onToggle,
   onSelect,
   selected = false,
 }: {
   task: Task;
   projectName?: string;
+  /** Subtask completion, when the task has any. */
+  progress?: { done: number; total: number };
   onToggle: (task: Task) => void;
   onSelect?: (task: Task) => void;
   selected?: boolean;
@@ -54,10 +58,26 @@ export function TaskRow({
           {task.title}
         </span>
 
-        {(task.dueDate !== undefined || projectName) && (
+        {(task.dueDate !== undefined ||
+          projectName ||
+          task.recurrence ||
+          progress) && (
           <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
             {task.dueDate !== undefined && (
               <DateChip dueDate={task.dueDate} hasTime={task.hasTime} />
+            )}
+            {task.recurrence && (
+              <Repeat
+                aria-label="Repeats"
+                className="size-3 text-faint"
+                strokeWidth={2}
+              />
+            )}
+            {progress && progress.total > 0 && (
+              <span className="text-meta inline-flex items-center gap-1 tabular-nums text-faint">
+                <ListTree aria-hidden className="size-3" strokeWidth={2} />
+                {progress.done}/{progress.total}
+              </span>
             )}
             {projectName && (
               <span className="text-meta text-faint">{projectName}</span>

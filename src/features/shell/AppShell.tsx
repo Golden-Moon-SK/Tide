@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Menu } from "lucide-react";
 import {
@@ -16,6 +22,8 @@ import { seedIfEmpty } from "@/db/mutations";
 import { INBOX_ID } from "@/db/schema";
 import { QuickAddBar } from "@/features/quick-add/QuickAddBar";
 import { TaskList } from "@/features/task-list/TaskList";
+import { TaskDetail } from "@/features/task-detail/TaskDetail";
+import type { Task } from "@/db/schema";
 import { Sidebar } from "./Sidebar";
 import { MOBILE_VIEWS, SMART_VIEWS, type SmartView, type View } from "./views";
 
@@ -38,6 +46,7 @@ function TodayDate() {
 export function AppShell() {
   const [view, setView] = useState<View>({ kind: "today" });
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const captureRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -78,7 +87,12 @@ export function AppShell() {
   function go(next: View) {
     setView(next);
     setDrawerOpen(false);
+    setSelectedId(null);
   }
+
+  const select = (task: Task) =>
+    setSelectedId((current) => (current === task.id ? null : task.id));
+  const closeDetail = useCallback(() => setSelectedId(null), []);
 
   function capture() {
     setDrawerOpen(false);
@@ -156,6 +170,8 @@ export function AppShell() {
                 <TaskList
                   tasks={today}
                   projectNames={projectNames}
+                  onSelect={select}
+                  selectedId={selectedId ?? undefined}
                   emptyTitle="Nothing due today."
                   emptyHint="Press / to capture something."
                 />
@@ -167,6 +183,8 @@ export function AppShell() {
                     <TaskList
                       tasks={done}
                       projectNames={projectNames}
+                      onSelect={select}
+                      selectedId={selectedId ?? undefined}
                       emptyTitle=""
                       emptyHint=""
                     />
@@ -179,6 +197,8 @@ export function AppShell() {
               <TaskList
                 tasks={upcoming}
                 projectNames={projectNames}
+                onSelect={select}
+                selectedId={selectedId ?? undefined}
                 emptyTitle="Nothing scheduled ahead."
                 emptyHint="The calm kind of empty."
               />
@@ -188,6 +208,8 @@ export function AppShell() {
               <TaskList
                 tasks={someday}
                 projectNames={projectNames}
+                onSelect={select}
+                selectedId={selectedId ?? undefined}
                 emptyTitle="No undated tasks."
                 emptyHint="Everything you've captured has a date on it."
               />
@@ -197,6 +219,8 @@ export function AppShell() {
               <TaskList
                 tasks={inProject}
                 projectNames={projectNames}
+                onSelect={select}
+                selectedId={selectedId ?? undefined}
                 emptyTitle="Nothing here."
                 emptyHint="Add the first task with the box above."
               />
@@ -206,6 +230,8 @@ export function AppShell() {
               <TaskList
                 tasks={done}
                 projectNames={projectNames}
+                onSelect={select}
+                selectedId={selectedId ?? undefined}
                 emptyTitle="Nothing finished today."
                 emptyHint="Yet."
               />
@@ -250,6 +276,28 @@ export function AppShell() {
           </ul>
         </nav>
       </div>
+
+      {/* Desktop: the detail sits beside the list, so you keep your place. */}
+      {selectedId && (
+        <aside className="hidden w-96 shrink-0 border-l border-border xl:block">
+          <TaskDetail taskId={selectedId} onClose={closeDetail} />
+        </aside>
+      )}
+
+      {/* Narrow: the same panel as a sheet over the content. */}
+      {selectedId && (
+        <div className="fixed inset-0 z-50 xl:hidden">
+          <button
+            type="button"
+            aria-label="Close task"
+            onClick={closeDetail}
+            className="absolute inset-0 bg-accent/25 backdrop-blur-[2px]"
+          />
+          <div className="absolute inset-y-0 right-0 w-full max-w-md border-l border-border shadow-soft">
+            <TaskDetail taskId={selectedId} onClose={closeDetail} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

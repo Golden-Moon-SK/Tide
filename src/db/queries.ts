@@ -1,4 +1,4 @@
-import { db, type Task, type Project } from "./schema";
+import { db, type Label, type Task, type Project } from "./schema";
 
 /**
  * Every smart-list definition lives here, and nowhere else. The UI and the
@@ -107,4 +107,32 @@ export async function openCountsByProject(): Promise<Record<string, number>> {
     counts[task.projectId] = (counts[task.projectId] ?? 0) + 1;
   }
   return counts;
+}
+
+export async function allLabels(): Promise<Label[]> {
+  const labels = await db.labels.toArray();
+  return labels.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export interface SubtaskProgress {
+  done: number;
+  total: number;
+}
+
+/**
+ * Subtask progress for every parent in one pass, so a list of N tasks costs one
+ * query rather than N.
+ */
+export async function subtaskProgress(): Promise<
+  Record<string, SubtaskProgress>
+> {
+  const tasks = await db.tasks.toArray();
+  const progress: Record<string, SubtaskProgress> = {};
+  for (const task of tasks) {
+    if (task.parentId === undefined) continue;
+    const entry = (progress[task.parentId] ??= { done: 0, total: 0 });
+    entry.total += 1;
+    if (task.completed) entry.done += 1;
+  }
+  return progress;
 }

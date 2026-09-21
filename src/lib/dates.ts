@@ -42,3 +42,45 @@ export function formatDueDate(timestamp: number, hasTime: boolean): string {
     .replace(":00", "");
   return `${day} ${time}`;
 }
+
+/**
+ * Epoch ms to the value an <input type="date"> expects, in LOCAL time.
+ * `toISOString()` would be UTC and silently shift the day across the date line.
+ */
+export function toDateInput(timestamp: number): string {
+  const d = new Date(timestamp);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+export function toTimeInput(timestamp: number): string {
+  const d = new Date(timestamp);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(
+    d.getMinutes(),
+  ).padStart(2, "0")}`;
+}
+
+/** Combines the two inputs back into epoch ms, keeping the existing time. */
+export function fromDateInput(
+  date: string,
+  time: string | undefined,
+  fallback: number,
+): number | undefined {
+  if (!date) return undefined;
+  const [year, month, day] = date.split("-").map(Number);
+  if (!year || !month || !day) return undefined;
+  const base = new Date(fallback);
+  const [hours, minutes] = time
+    ? time.split(":").map(Number)
+    : [base.getHours(), base.getMinutes()];
+  return new Date(year, month - 1, day, hours ?? 12, minutes ?? 0, 0, 0).getTime();
+}
+
+/** Midday, so a date with no time never straddles a boundary. */
+export function dateAtNoon(offsetDays: number): number {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  d.setHours(12, 0, 0, 0);
+  return d.getTime();
+}
