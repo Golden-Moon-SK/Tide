@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties, ReactNode, Ref } from "react";
 import { motion } from "motion/react";
 import { ListTree, Repeat } from "lucide-react";
 import type { Task } from "@/db/schema";
@@ -18,6 +19,10 @@ export function TaskRow({
   onToggle,
   onSelect,
   selected = false,
+  handle,
+  innerRef,
+  style,
+  dragging = false,
 }: {
   task: Task;
   projectName?: string;
@@ -26,18 +31,35 @@ export function TaskRow({
   onToggle: (task: Task) => void;
   onSelect?: (task: Task) => void;
   selected?: boolean;
+  /** Supplied by SortableTaskRow; absent in lists that aren't reorderable. */
+  handle?: ReactNode;
+  innerRef?: Ref<HTMLLIElement>;
+  style?: CSSProperties;
+  dragging?: boolean;
 }) {
   return (
     <motion.li
-      layout
+      ref={innerRef}
+      style={style}
+      // Motion's layout animation and dnd-kit's transform both want to own the
+      // element's position, so layout is off while a drag is in flight.
+      layout={!dragging}
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
       transition={{ type: "spring", stiffness: 520, damping: 40, mass: 0.6 }}
       className={`group flex gap-3 rounded-lg px-2 py-2.5 transition-colors ${
-        selected ? "bg-surface-hover" : "hover:bg-surface-hover"
+        dragging
+          ? "relative z-10 bg-surface-raised shadow-soft"
+          : selected
+            ? "bg-surface-hover"
+            : "hover:bg-surface-hover"
       }`}
     >
+      {handle && (
+        <span className="flex w-3 shrink-0 items-start pt-1">{handle}</span>
+      )}
+
       <PriorityDot
         priority={task.priority}
         completed={task.completed}

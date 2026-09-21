@@ -63,9 +63,16 @@ export async function somedayTasks(): Promise<Task[]> {
     .sort(byListOrder);
 }
 
+/**
+ * A project is the one place manual order wins. The smart lists are sorted by
+ * date because that's what they're for; inside a project you arrange the work
+ * yourself, so sortOrder alone decides and dragging a task actually sticks.
+ */
 export async function projectTasks(projectId: string): Promise<Task[]> {
   const tasks = await db.tasks.where("projectId").equals(projectId).toArray();
-  return tasks.filter(isOpenTopLevel).sort(byListOrder);
+  return tasks
+    .filter(isOpenTopLevel)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 export async function subtasks(parentId: string): Promise<Task[]> {
@@ -135,4 +142,18 @@ export async function subtaskProgress(): Promise<
     if (task.completed) entry.done += 1;
   }
   return progress;
+}
+
+/** Open tasks whose title contains `term`, for the command palette. */
+export async function searchOpenTasks(
+  term: string,
+  limit = 8,
+): Promise<Task[]> {
+  const needle = term.trim().toLowerCase();
+  if (!needle) return [];
+  const tasks = await db.tasks.toArray();
+  return tasks
+    .filter((t) => !t.completed && t.title.toLowerCase().includes(needle))
+    .sort(byListOrder)
+    .slice(0, limit);
 }

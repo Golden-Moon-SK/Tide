@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -18,12 +19,12 @@ import {
   todayTasks,
   upcomingTasks,
 } from "@/db/queries";
-import { seedIfEmpty } from "@/db/mutations";
-import { INBOX_ID } from "@/db/schema";
+import { seedIfEmpty, setCompleted } from "@/db/mutations";
+import { INBOX_ID, type Task } from "@/db/schema";
 import { QuickAddBar } from "@/features/quick-add/QuickAddBar";
 import { TaskList } from "@/features/task-list/TaskList";
 import { TaskDetail } from "@/features/task-detail/TaskDetail";
-import type { Task } from "@/db/schema";
+import { CommandPalette } from "@/features/command-palette/CommandPalette";
 import { Sidebar } from "./Sidebar";
 import { MOBILE_VIEWS, SMART_VIEWS, type SmartView, type View } from "./views";
 
@@ -47,6 +48,9 @@ export function AppShell() {
   const [view, setView] = useState<View>({ kind: "today" });
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  /** The keyboard cursor. Separate from selection: j/k move it, Enter opens. */
+  const [cursorId, setCursorId] = useState<string | null>(null);
   const captureRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -72,6 +76,53 @@ export function AppShell() {
     (projects ?? []).map((p) => [p.id, p.name]),
   );
 
+  /**
+   * One description of whatever the main pane is showing. Everything else —
+   * the list, the keyboard cursor, the empty state — reads from this, so they
+   * can't drift apart as views are added.
+   */
+  const pane = useMemo(() => {
+    switch (view.kind) {
+      case "today":
+        return {
+          tasks: today,
+          sortable: false,
+          emptyTitle: "Nothing due today.",
+          emptyHint: "Press / to capture something.",
+        };
+      case "upcoming":
+        return {
+          tasks: upcoming,
+          sortable: false,
+          emptyTitle: "Nothing scheduled ahead.",
+          emptyHint: "The calm kind of empty.",
+        };
+      case "someday":
+        return {
+          tasks: someday,
+          sortable: false,
+          emptyTitle: "No undated tasks.",
+          emptyHint: "Everything you've captured has a date on it.",
+        };
+      case "completed":
+        return {
+          tasks: done,
+          sortable: false,
+          emptyTitle: "Nothing finished today.",
+          emptyHint: "Yet.",
+        };
+      case "assistant":
+        return { tasks: undefined, sortable: false, emptyTitle: "", emptyHint: "" };
+      default:
+        return {
+          tasks: inProject,
+          sortable: true,
+          emptyTitle: "Nothing here.",
+          emptyHint: "Add the first task with the box above.",
+        };
+    }
+  }, [view.kind, today, upcoming, someday, done, inProject]);
+
   const smartCounts: Partial<Record<SmartView, number>> = {
     inbox: projectCounts[INBOX_ID],
     today: today?.length,
@@ -81,23 +132,95 @@ export function AppShell() {
 
   const current =
     view.kind === "project"
-      ? projectNames[view.id] ?? "Project"
+      ? (projectNames[view.id] ?? "Project")
       : SMART_VIEWS.find((v) => v.id === view.kind)!.label;
 
-  function go(next: View) {
+  const go = useCallback((next: View) => {
     setView(next);
     setDrawerOpen(false);
     setSelectedId(null);
-  }
+    setCursorId(null);
+  }, []);
 
   const select = (task: Task) =>
-    setSelectedId((current) => (current === task.id ? null : task.id));
+    setSelectedId((currentId) => (currentId === task.id ? null : task.id));
   const closeDetail = useCallback(() => setSelectedId(null), []);
 
-  function capture() {
+  const capture = useCallback(() => {
     setDrawerOpen(false);
     captureRef.current?.focus();
-  }
+  }, []);
+
+  const openTask = useCallback((taskId: string, projectId: string) => {
+    setView({ kind: "project", id: projectId });
+    setSelectedId(taskId);
+    setCursorId(taskId);
+  }, []);
+
+  // Keyboard: j/k move the cursor, x completes, e or Enter opens, Cmd+K is the
+  // palette. Held deliberately at the shell, which is the only place that knows
+  // what the visible list currently is.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen(true);
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      const typing =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.tagName === "SELECT" ||
+        target?.isContentEditable;
+      if (typing || event.metaKey || event.ctrlKey || event.altKey) return;
+
+      const list = pane.tasks;
+      if (!list || list.length === 0) return;
+      const index = list.findIndex((t) => t.id === cursorId);
+
+      switch (event.key) {
+        case "j":
+        case "ArrowDown": {
+          event.preventDefault();
+          const next = index < 0 ? 0 : Math.min(index + 1, list.length - 1);
+          setCursorId(list[next].id);
+          break;
+        }
+        case "k":
+        case "ArrowUp": {
+          event.preventDefault();
+          const next = index < 0 ? 0 : Math.max(index - 1, 0);
+          setCursorId(list[next].id);
+          break;
+        }
+        case "x": {
+          if (index < 0) return;
+          event.preventDefault();
+          const task = list[index];
+          // Step the cursor on first, so it doesn't land on nothing when the
+          // completed row leaves the list.
+          setCursorId(list[Math.min(index + 1, list.length - 1)]?.id ?? null);
+          void setCompleted(task.id, !task.completed);
+          break;
+        }
+        case "e":
+        case "Enter": {
+          if (index < 0) return;
+          event.preventDefault();
+          setSelectedId(list[index].id);
+          break;
+        }
+        case "Escape":
+          setSelectedId(null);
+          break;
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [pane.tasks, cursorId]);
 
   const sidebar = (
     <Sidebar
@@ -107,6 +230,18 @@ export function AppShell() {
       projects={projects}
       smartCounts={smartCounts}
       projectCounts={projectCounts}
+    />
+  );
+
+  const list = (
+    <TaskList
+      tasks={pane.tasks}
+      sortable={pane.sortable}
+      projectNames={projectNames}
+      emptyTitle={pane.emptyTitle}
+      emptyHint={pane.emptyHint}
+      onSelect={select}
+      selectedId={selectedId ?? cursorId ?? undefined}
     />
   );
 
@@ -165,79 +300,7 @@ export function AppShell() {
               </div>
             )}
 
-            {view.kind === "today" && (
-              <>
-                <TaskList
-                  tasks={today}
-                  projectNames={projectNames}
-                  onSelect={select}
-                  selectedId={selectedId ?? undefined}
-                  emptyTitle="Nothing due today."
-                  emptyHint="Press / to capture something."
-                />
-                {done && done.length > 0 && (
-                  <section className="mt-10">
-                    <h2 className="text-meta mb-2 px-2 text-faint">
-                      Done today · {done.length}
-                    </h2>
-                    <TaskList
-                      tasks={done}
-                      projectNames={projectNames}
-                      onSelect={select}
-                      selectedId={selectedId ?? undefined}
-                      emptyTitle=""
-                      emptyHint=""
-                    />
-                  </section>
-                )}
-              </>
-            )}
-
-            {view.kind === "upcoming" && (
-              <TaskList
-                tasks={upcoming}
-                projectNames={projectNames}
-                onSelect={select}
-                selectedId={selectedId ?? undefined}
-                emptyTitle="Nothing scheduled ahead."
-                emptyHint="The calm kind of empty."
-              />
-            )}
-
-            {view.kind === "someday" && (
-              <TaskList
-                tasks={someday}
-                projectNames={projectNames}
-                onSelect={select}
-                selectedId={selectedId ?? undefined}
-                emptyTitle="No undated tasks."
-                emptyHint="Everything you've captured has a date on it."
-              />
-            )}
-
-            {(view.kind === "inbox" || view.kind === "project") && (
-              <TaskList
-                tasks={inProject}
-                projectNames={projectNames}
-                onSelect={select}
-                selectedId={selectedId ?? undefined}
-                emptyTitle="Nothing here."
-                emptyHint="Add the first task with the box above."
-              />
-            )}
-
-            {view.kind === "completed" && (
-              <TaskList
-                tasks={done}
-                projectNames={projectNames}
-                onSelect={select}
-                selectedId={selectedId ?? undefined}
-                emptyTitle="Nothing finished today."
-                emptyHint="Yet."
-              />
-            )}
-
-            {view.kind === "assistant" && (
+            {view.kind === "assistant" ? (
               <div className="rounded-xl border border-dashed border-border px-5 py-14 text-center">
                 <p className="text-section text-muted">
                   The assistant lands in Phase 3.
@@ -246,6 +309,24 @@ export function AppShell() {
                   Break down a task, plan your day, run a weekly review.
                 </p>
               </div>
+            ) : (
+              list
+            )}
+
+            {view.kind === "today" && done && done.length > 0 && (
+              <section className="mt-10">
+                <h2 className="text-meta mb-2 px-2 text-faint">
+                  Done today · {done.length}
+                </h2>
+                <TaskList
+                  tasks={done}
+                  projectNames={projectNames}
+                  emptyTitle=""
+                  emptyHint=""
+                  onSelect={select}
+                  selectedId={selectedId ?? undefined}
+                />
+              </section>
             )}
           </div>
         </main>
@@ -298,6 +379,14 @@ export function AppShell() {
           </div>
         </div>
       )}
+
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onSelectView={go}
+        onSelectTask={openTask}
+        onAddTask={capture}
+      />
     </div>
   );
 }

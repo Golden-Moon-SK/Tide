@@ -67,8 +67,14 @@ JSON export/import is the only backup and is not optional.
   `useTheme()` plus the pre-paint `THEME_SCRIPT` in the root layout.
 - Completion is a spring animation and the row collapsing, not a checkbox
   flipping. Use `motion`.
-- Keyboard-first: `/` capture, `j`/`k` move, `x` complete, `e` schedule,
-  `cmd+K` palette. This is what a web app can do better than a native to-do app.
+- Keyboard-first: `/` capture, `j`/`k` move the cursor, `x` completes, `e` or
+  Enter opens, `cmd+K` is the palette. The key handler lives in `AppShell`,
+  which is the only place that knows what the visible list is; `pane` there is
+  the single description of what the main pane shows, and the list, the cursor
+  and the empty state all read from it.
+- Smart lists are sorted by date; a project list is sorted by `sortOrder` alone,
+  so dragging a task inside a project actually sticks. Only project lists pass
+  `sortable` to `TaskList`.
 
 ## AI
 
@@ -96,9 +102,19 @@ whenever it gets something wrong.
 change rendered as a confirm card ("Create 3 tasks in #Work - Apply / Discard").
 A bad parse must cost a tap, not a cleanup.
 
+## React
+
+- Don't reset state in an effect when a prop changes. Either mount the component
+  only while it's needed (`CommandPalette`) or key it on the id (`TaskDetail`).
+  The `react-hooks/set-state-in-effect` lint rule enforces this and it is not an
+  error to silence. Effects are for DOM focus, event listeners and subscriptions.
+- Lists animate through `motion`'s `layout`, which fights dnd-kit's transforms —
+  `TaskRow` turns `layout` off while a row is being dragged.
+
 ## Working here
 
 - `npm run dev` stays open; look at every change in the browser.
-- `npm run build` must pass before a commit.
+- `npm run build` and `npm test` must pass before a commit.
+- `npx eslint .` too — the React Compiler rules catch real bugs here.
 - Commit after every working feature. Small commits are the undo button.
 - When a convention here changes, update this file in the same commit.
