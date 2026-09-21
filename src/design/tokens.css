@@ -5,96 +5,107 @@
  * the Tailwind utilities these generate (bg-surface, text-muted, text-task) and
  * never a raw hex or px value.
  *
- * Both themes are authored deliberately. Dark is not a derived inversion of
- * light: the greys are cooler, the accent is lifted, and the priority colours
- * are desaturated so they read as signal rather than alarm.
+ * The palette is four warm greys — a single sand ramp, from ink to paper. Every
+ * surface, line and text step is that ramp or a mix of two of its stops, so the
+ * chrome of the app is quiet by construction and the only saturated colour on
+ * screen is priority.
+ *
+ * Both themes are authored deliberately. Dark is not a derived inversion: the
+ * ramp is re-anchored below the ink stop, so the darks stay warm instead of
+ * going to neutral black, and the accent climbs the ramp rather than glowing.
  */
 
 :root {
-  /* Surfaces — warm off-white, so long lists don't glare */
-  --surface: #fbfaf8;
-  --surface-raised: #ffffff;
-  --surface-sunken: #f3f1ed;
-  --surface-hover: #f0eeea;
+  /* The ramp. These four values are the entire palette. */
+  --sand-ink: #4f4d46;
+  --sand-stone: #787569;
+  --sand-clay: #c9c5b1;
+  --sand-paper: #ede8d0;
+
+  /* Surfaces — paper, with card stock lifted a touch above the page */
+  --surface: var(--sand-paper);
+  --surface-raised: color-mix(in srgb, var(--sand-paper) 55%, #fff);
+  --surface-sunken: color-mix(in srgb, var(--sand-clay) 45%, var(--sand-paper));
+  --surface-hover: color-mix(in srgb, var(--sand-clay) 30%, var(--sand-paper));
 
   /* Lines */
-  --border: #e7e4de;
-  --border-strong: #d5d1c9;
+  --border: color-mix(in srgb, var(--sand-clay) 70%, var(--sand-paper));
+  --border-strong: var(--sand-clay);
 
   /* Text — one ramp, three steps */
-  --text: #1b1a18;
-  --text-muted: #6a6761;
-  --text-faint: #9b978e;
+  --text: var(--sand-ink);
+  --text-muted: var(--sand-stone);
+  --text-faint: color-mix(in srgb, var(--sand-stone) 78%, var(--sand-clay));
 
-  /* Accent — a single deep teal. The only decorative colour in the app. */
-  --accent: #0d7680;
-  --accent-hover: #0a5e66;
-  --accent-contrast: #ffffff;
-  --accent-soft: #e2f0f1;
+  /* Accent — the ink stop. Emphasis is weight and contrast, not hue. */
+  --accent: var(--sand-ink);
+  --accent-hover: color-mix(in srgb, var(--sand-ink) 80%, #000);
+  --accent-contrast: var(--sand-paper);
+  --accent-soft: color-mix(in srgb, var(--sand-clay) 55%, var(--sand-paper));
 
-  /* Priority — meaning, never decoration */
-  --priority-1: #cf4436;
-  --priority-2: #c97a1b;
-  --priority-3: #3a6fb8;
-  --priority-4: #b5b1a9;
+  /* Priority — meaning, never decoration. Warmed to sit on sand. */
+  --priority-1: #b4442f;
+  --priority-2: #a8741f;
+  --priority-3: #4a6f8a;
+  --priority-4: var(--sand-clay);
 
   /* Status */
-  --danger: #cf4436;
-  --overdue: #cf4436;
+  --danger: #b4442f;
+  --overdue: #b4442f;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --surface: #0f1214;
-    --surface-raised: #171b1e;
-    --surface-sunken: #0a0d0e;
-    --surface-hover: #1e2327;
+    --surface: color-mix(in srgb, var(--sand-ink) 42%, #000);
+    --surface-raised: color-mix(in srgb, var(--sand-ink) 58%, #000);
+    --surface-sunken: color-mix(in srgb, var(--sand-ink) 28%, #000);
+    --surface-hover: color-mix(in srgb, var(--sand-ink) 70%, #000);
 
-    --border: #262c30;
-    --border-strong: #363d42;
+    --border: color-mix(in srgb, var(--sand-stone) 40%, #000);
+    --border-strong: color-mix(in srgb, var(--sand-stone) 72%, #000);
 
-    --text: #ebe9e5;
-    --text-muted: #9aa0a3;
-    --text-faint: #6a7175;
+    --text: var(--sand-paper);
+    --text-muted: var(--sand-clay);
+    --text-faint: var(--sand-stone);
 
-    --accent: #3fb8c2;
-    --accent-hover: #5ccdd6;
-    --accent-contrast: #08191b;
-    --accent-soft: #10292c;
+    --accent: var(--sand-clay);
+    --accent-hover: var(--sand-paper);
+    --accent-contrast: var(--sand-ink);
+    --accent-soft: color-mix(in srgb, var(--sand-stone) 34%, #000);
 
-    --priority-1: #ed7268;
-    --priority-2: #dda04c;
-    --priority-3: #6f9fe0;
-    --priority-4: #5c6165;
+    --priority-1: #e08874;
+    --priority-2: #d3a459;
+    --priority-3: #8aabc4;
+    --priority-4: var(--sand-stone);
 
-    --danger: #ed7268;
-    --overdue: #ed7268;
+    --danger: #e08874;
+    --overdue: #e08874;
   }
 }
 
 [data-theme="dark"] {
-  --surface: #0f1214;
-  --surface-raised: #171b1e;
-  --surface-sunken: #0a0d0e;
-  --surface-hover: #1e2327;
+  --surface: color-mix(in srgb, var(--sand-ink) 42%, #000);
+  --surface-raised: color-mix(in srgb, var(--sand-ink) 58%, #000);
+  --surface-sunken: color-mix(in srgb, var(--sand-ink) 28%, #000);
+  --surface-hover: color-mix(in srgb, var(--sand-ink) 70%, #000);
 
-  --border: #262c30;
-  --border-strong: #363d42;
+  --border: color-mix(in srgb, var(--sand-stone) 40%, #000);
+  --border-strong: color-mix(in srgb, var(--sand-stone) 72%, #000);
 
-  --text: #ebe9e5;
-  --text-muted: #9aa0a3;
-  --text-faint: #6a7175;
+  --text: var(--sand-paper);
+  --text-muted: var(--sand-clay);
+  --text-faint: var(--sand-stone);
 
-  --accent: #3fb8c2;
-  --accent-hover: #5ccdd6;
-  --accent-contrast: #08191b;
-  --accent-soft: #10292c;
+  --accent: var(--sand-clay);
+  --accent-hover: var(--sand-paper);
+  --accent-contrast: var(--sand-ink);
+  --accent-soft: color-mix(in srgb, var(--sand-stone) 34%, #000);
 
-  --priority-1: #ed7268;
-  --priority-2: #dda04c;
-  --priority-3: #6f9fe0;
-  --priority-4: #5c6165;
+  --priority-1: #e08874;
+  --priority-2: #d3a459;
+  --priority-3: #8aabc4;
+  --priority-4: var(--sand-stone);
 
-  --danger: #ed7268;
-  --overdue: #ed7268;
+  --danger: #e08874;
+  --overdue: #e08874;
 }
