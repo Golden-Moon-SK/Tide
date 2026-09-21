@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Menu } from "lucide-react";
 import {
@@ -18,6 +18,22 @@ import { QuickAddBar } from "@/features/quick-add/QuickAddBar";
 import { TaskList } from "@/features/task-list/TaskList";
 import { Sidebar } from "./Sidebar";
 import { MOBILE_VIEWS, SMART_VIEWS, type SmartView, type View } from "./views";
+
+const noopSubscribe = () => () => {};
+
+function formatToday() {
+  return new Date().toLocaleDateString(undefined, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
+// The server formats in its own locale, the browser in the user's, so the
+// date is only rendered on the client; the server snapshot is empty.
+function TodayDate() {
+  return useSyncExternalStore(noopSubscribe, formatToday, () => "");
+}
 
 export function AppShell() {
   const [view, setView] = useState<View>({ kind: "today" });
@@ -117,12 +133,8 @@ export function AppShell() {
               {current}
             </h1>
             {view.kind === "today" && (
-              <p className="text-meta mt-0.5 text-muted">
-                {new Date().toLocaleDateString(undefined, {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                })}
+              <p className="text-meta mt-0.5 min-h-lh text-muted">
+                <TodayDate />
               </p>
             )}
           </div>

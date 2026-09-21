@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { THEME_SCRIPT } from "@/features/shell/useTheme";
 import "./globals.css";
 
@@ -25,12 +26,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
+      <body className="min-h-full">
         {/* Applies the saved theme before first paint, so a dark-mode reload
             never flashes the light palette. */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-      </head>
-      <body className="min-h-full">{children}</body>
+        <Script id="theme-init" strategy="beforeInteractive">
+          {THEME_SCRIPT}
+        </Script>
+        {children}
+      </body>
     </html>
   );
 }
