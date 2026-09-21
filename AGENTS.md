@@ -1,0 +1,96 @@
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
+
+# Tide
+
+A to-do app. Todoist's mental model (projects, natural-language quick add,
+priorities, labels), a calmer UI, and an AI assistant.
+
+Local-first and free to run: data lives in IndexedDB, there is no server, no
+database and no hosting. The only thing that ever costs money is Claude tokens
+on the owner's own key.
+
+## Layout
+
+```
+src/
+  app/            layout.tsx  page.tsx  globals.css
+                  api/assistant/route.ts   the ONLY place the Claude key is touched
+  db/             schema.ts  queries.ts  mutations.ts
+  features/       quick-add/ task-list/ task-detail/ projects/ assistant/
+  design/         tokens.css  components/
+  lib/            parse.ts  recurrence.ts
+```
+
+## Data
+
+Dexie over IndexedDB. Tables: `tasks`, `projects`, `labels`.
+
+- `priority` is 1-4, Todoist-style: 1 = urgent, 4 = none.
+- `sortOrder` is a float. Reorder by taking the midpoint between neighbours;
+  never reindex a list.
+- `hasTime` distinguishes "Friday" from "Friday 3pm". A `dueDate` alone is not
+  enough to know whether to show a time.
+- Dates are epoch milliseconds. IndexedDB cannot index a `Date`.
+- Ids are `crypto.randomUUID()`.
+
+**Every smart-list query lives in `src/db/queries.ts` and every write in
+`src/db/mutations.ts`.** No component imports `db` directly. "What counts as
+Today" is defined exactly once, and the assistant reads the same definition the
+UI does.
+
+Since the database lives in one browser profile, clearing site data wipes it.
+JSON export/import is the only backup and is not optional.
+
+## Design system
+
+- **No hardcoded hex or px in a feature component.** Everything comes from
+  `src/design/tokens.css` via Tailwind utilities. A raw `#5b8dee` or
+  `text-[17px]` in a feature file is a bug.
+- Both themes are authored deliberately in `tokens.css`. Dark mode is designed,
+  not derived.
+- Color carries meaning only: priority and project. Never decoration.
+- Completion is a spring animation and the row collapsing, not a checkbox
+  flipping. Use `motion`.
+- Keyboard-first: `/` capture, `j`/`k` move, `x` complete, `e` schedule,
+  `cmd+K` palette. This is what a web app can do better than a native to-do app.
+
+## AI
+
+Two tiers.
+
+**Free tier** — capture parsing, `src/lib/parse.ts`, `chrono-node` plus regex
+for `p1`, `#project`, `@label`. Runs in the browser, instant, offline, no
+tokens. **Tide must be fully usable with the assistant switched off**, so this
+ships first and is the correctness baseline. It has unit tests; add a case
+whenever it gets something wrong.
+
+**Claude tier** — breakdown, day planning, weekly review, chat. Server-side in
+`src/app/api/assistant/route.ts` using `@anthropic-ai/sdk`.
+
+- `ANTHROPIC_API_KEY` comes from `.env.local`, server-side only. It must never
+  reach the browser, and `.env.local` is gitignored.
+- Model `claude-opus-5`, `thinking: { type: "adaptive" }` for reasoning-heavy
+  requests. Never send `budget_tokens` - it is a 400 on this model.
+- Stream the response back as a `ReadableStream`; `max_tokens: 64000`.
+- Check `stop_reason === "refusal"` before reading content.
+- Tool loop: while `stop_reason === "tool_use"`, return **all** `tool_result`
+  blocks in a single user message.
+
+**The assistant never writes to the database.** A tool call becomes a proposed
+change rendered as a confirm card ("Create 3 tasks in #Work - Apply / Discard").
+A bad parse must cost a tap, not a cleanup.
+
+## Working here
+
+- `npm run dev` stays open; look at every change in the browser.
+- `npm run build` must pass before a commit.
+- Commit after every working feature. Small commits are the undo button.
+- When a convention here changes, update this file in the same commit.

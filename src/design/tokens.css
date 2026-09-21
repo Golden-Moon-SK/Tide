@@ -1,0 +1,100 @@
+/*
+ * Tide design tokens.
+ *
+ * Every colour and type size in the app comes from here. Feature components use
+ * the Tailwind utilities these generate (bg-surface, text-muted, text-task) and
+ * never a raw hex or px value.
+ *
+ * Both themes are authored deliberately. Dark is not a derived inversion of
+ * light: the greys are cooler, the accent is lifted, and the priority colours
+ * are desaturated so they read as signal rather than alarm.
+ */
+
+:root {
+  /* Surfaces — warm off-white, so long lists don't glare */
+  --surface: #fbfaf8;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f3f1ed;
+  --surface-hover: #f0eeea;
+
+  /* Lines */
+  --border: #e7e4de;
+  --border-strong: #d5d1c9;
+
+  /* Text — one ramp, three steps */
+  --text: #1b1a18;
+  --text-muted: #6a6761;
+  --text-faint: #9b978e;
+
+  /* Accent — a single deep teal. The only decorative colour in the app. */
+  --accent: #0d7680;
+  --accent-hover: #0a5e66;
+  --accent-contrast: #ffffff;
+  --accent-soft: #e2f0f1;
+
+  /* Priority — meaning, never decoration */
+  --priority-1: #cf4436;
+  --priority-2: #c97a1b;
+  --priority-3: #3a6fb8;
+  --priority-4: #b5b1a9;
+
+  /* Status */
+  --danger: #cf4436;
+  --overdue: #cf4436;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface: #0f1214;
+    --surface-raised: #171b1e;
+    --surface-sunken: #0a0d0e;
+    --surface-hover: #1e2327;
+
+    --border: #262c30;
+    --border-strong: #363d42;
+
+    --text: #ebe9e5;
+    --text-muted: #9aa0a3;
+    --text-faint: #6a7175;
+
+    --accent: #3fb8c2;
+    --accent-hover: #5ccdd6;
+    --accent-contrast: #08191b;
+    --accent-soft: #10292c;
+
+    --priority-1: #ed7268;
+    --priority-2: #dda04c;
+    --priority-3: #6f9fe0;
+    --priority-4: #5c6165;
+
+    --danger: #ed7268;
+    --overdue: #ed7268;
+  }
+}
+
+[data-theme="dark"] {
+  --surface: #0f1214;
+  --surface-raised: #171b1e;
+  --surface-sunken: #0a0d0e;
+  --surface-hover: #1e2327;
+
+  --border: #262c30;
+  --border-strong: #363d42;
+
+  --text: #ebe9e5;
+  --text-muted: #9aa0a3;
+  --text-faint: #6a7175;
+
+  --accent: #3fb8c2;
+  --accent-hover: #5ccdd6;
+  --accent-contrast: #08191b;
+  --accent-soft: #10292c;
+
+  --priority-1: #ed7268;
+  --priority-2: #dda04c;
+  --priority-3: #6f9fe0;
+  --priority-4: #5c6165;
+
+  --danger: #ed7268;
+  --overdue: #ed7268;
+}
