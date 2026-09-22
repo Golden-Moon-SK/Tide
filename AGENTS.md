@@ -86,21 +86,37 @@ tokens. **Tide must be fully usable with the assistant switched off**, so this
 ships first and is the correctness baseline. It has unit tests; add a case
 whenever it gets something wrong.
 
-**Claude tier** — breakdown, day planning, weekly review, chat. Server-side in
-`src/app/api/assistant/route.ts` using `@anthropic-ai/sdk`.
+**Claude tier** — breakdown, day planning, weekly review, chat.
+
+`src/app/api/assistant/route.ts` is a **relay, not the agent**. Tasks live in
+IndexedDB in the browser and never reach the server, so the agent loop runs
+client-side in `useAssistant`: stream a reply, run any tool calls locally
+against Dexie, post the results back, repeat. The route only talks to Claude.
 
 - `ANTHROPIC_API_KEY` comes from `.env.local`, server-side only. It must never
-  reach the browser, and `.env.local` is gitignored.
-- Model `claude-opus-5`, `thinking: { type: "adaptive" }` for reasoning-heavy
-  requests. Never send `budget_tokens` - it is a 400 on this model.
-- Stream the response back as a `ReadableStream`; `max_tokens: 64000`.
+  reach the browser, and `.env.local` is gitignored (`.env.example` is not).
+- Model `claude-opus-5`, `thinking: { type: "adaptive" }`. Never send
+  `budget_tokens` - it is a 400 on this model.
+- Streaming is required at `max_tokens: 64000`; a non-streaming request that
+  large risks an HTTP timeout.
+- The route answers newline-delimited JSON (`text` / `done` / `error`), not raw
+  Anthropic SSE, so the client doesn't re-implement event parsing.
+- Server-side fallbacks are on. The beta isn't on every account, so a 400 naming
+  it retries once without — see `isFallbackBetaRejection`.
 - Check `stop_reason === "refusal"` before reading content.
-- Tool loop: while `stop_reason === "tool_use"`, return **all** `tool_result`
-  blocks in a single user message.
+- Return **all** `tool_result` blocks in a single user message. Splitting them
+  teaches the model to stop calling tools in parallel. A failed tool still gets
+  a result, with `is_error` — dropping one leaves the next turn malformed.
+- Echo the assistant's `content` back verbatim, thinking blocks included.
 
-**The assistant never writes to the database.** A tool call becomes a proposed
-change rendered as a confirm card ("Create 3 tasks in #Work - Apply / Discard").
-A bad parse must cost a tap, not a cleanup.
+Tools live in `src/features/assistant/tools.ts`, shared: the route sends the
+schemas, the browser runs the calls in `execute.ts`.
+
+**The assistant never writes to the database.** Read tools run for real; write
+tools return a `Proposal` the UI renders as a card with apply/discard. A wrong
+suggestion must cost a click, not a cleanup. Recurrence the model writes in
+English goes through the same `matchRecurrence` the capture bar uses, so both
+paths agree on what "every monday" means.
 
 ## React
 

@@ -25,6 +25,7 @@ import { QuickAddBar } from "@/features/quick-add/QuickAddBar";
 import { TaskList } from "@/features/task-list/TaskList";
 import { TaskDetail } from "@/features/task-detail/TaskDetail";
 import { CommandPalette } from "@/features/command-palette/CommandPalette";
+import { AssistantPanel } from "@/features/assistant/AssistantPanel";
 import { Sidebar } from "./Sidebar";
 import { MOBILE_VIEWS, SMART_VIEWS, type SmartView, type View } from "./views";
 
@@ -301,14 +302,7 @@ export function AppShell() {
             )}
 
             {view.kind === "assistant" ? (
-              <div className="rounded-xl border border-dashed border-border px-5 py-14 text-center">
-                <p className="text-section text-muted">
-                  The assistant lands in Phase 3.
-                </p>
-                <p className="text-meta mt-1.5 text-faint">
-                  Break down a task, plan your day, run a weekly review.
-                </p>
-              </div>
+              <AssistantPanel />
             ) : (
               list
             )}
