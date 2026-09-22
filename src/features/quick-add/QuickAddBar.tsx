@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { createTaskFromCapture } from "@/db/mutations";
 import { parseCapture } from "@/lib/parse";
 import { CaptureChips } from "./CaptureChips";
+import { CaptureHints } from "./CaptureHints";
 
 /**
  * Capture. The most important surface in the app, so it is always present and
@@ -22,6 +23,7 @@ export function QuickAddBar({
   inputRef?: RefObject<HTMLInputElement | null>;
 }) {
   const [value, setValue] = useState("");
+  const [focused, setFocused] = useState(false);
   const localRef = useRef<HTMLInputElement>(null);
   const inputRef = externalRef ?? localRef;
 
@@ -60,6 +62,8 @@ export function QuickAddBar({
           ref={inputRef}
           value={value}
           onChange={(event) => setValue(event.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           onKeyDown={(event) => {
             if (event.key === "Escape") {
               setValue("");
@@ -75,11 +79,15 @@ export function QuickAddBar({
         </kbd>
       </div>
 
-      <CaptureChips
-        tokens={parsed.tokens}
-        priority={parsed.priority}
-        title={parsed.title}
-      />
+      {value ? (
+        <CaptureChips
+          tokens={parsed.tokens}
+          priority={parsed.priority}
+          title={parsed.title}
+        />
+      ) : (
+        focused && <CaptureHints />
+      )}
     </form>
   );
 }
