@@ -14,15 +14,15 @@ A to-do app. Todoist's mental model (projects, natural-language quick add,
 priorities, labels), a calmer UI, and an AI assistant.
 
 Local-first and free to run: data lives in IndexedDB, there is no server, no
-database and no hosting. The only thing that ever costs money is Claude tokens
-on the owner's own key.
+database and no hosting. The only thing that ever costs money is OpenRouter
+tokens on the owner's own key.
 
 ## Layout
 
 ```
 src/
   app/            layout.tsx  page.tsx  globals.css
-                  api/assistant/route.ts   the ONLY place the Claude key is touched
+                  api/assistant/route.ts   the ONLY place the OpenRouter key is touched
   db/             schema.ts  queries.ts  mutations.ts
   features/       quick-add/ task-list/ task-detail/ projects/ assistant/
   design/         tokens.css  components/
@@ -86,28 +86,33 @@ tokens. **Tide must be fully usable with the assistant switched off**, so this
 ships first and is the correctness baseline. It has unit tests; add a case
 whenever it gets something wrong.
 
-**Claude tier** — breakdown, day planning, weekly review, chat.
+**Model tier** — breakdown, day planning, weekly review, chat.
 
 `src/app/api/assistant/route.ts` is a **relay, not the agent**. Tasks live in
 IndexedDB in the browser and never reach the server, so the agent loop runs
 client-side in `useAssistant`: stream a reply, run any tool calls locally
-against Dexie, post the results back, repeat. The route only talks to Claude.
+against Dexie, post the results back, repeat. The route only talks to
+OpenRouter, model `deepseek/deepseek-v4.1-flash`.
 
-- `ANTHROPIC_API_KEY` comes from `.env.local`, server-side only. It must never
+- `OPENROUTER_API_KEY` comes from `.env.local`, server-side only. It must never
   reach the browser, and `.env.local` is gitignored (`.env.example` is not).
-- Model `claude-opus-5`, `thinking: { type: "adaptive" }`. Never send
-  `budget_tokens` - it is a 400 on this model.
-- Streaming is required at `max_tokens: 64000`; a non-streaming request that
-  large risks an HTTP timeout.
+- The client's history and tool contract are **Anthropic-shaped content
+  blocks** (`text` / `tool_use` / `tool_result`) — that predates the move to
+  OpenRouter and `useAssistant.ts` / `execute.ts` / `tools.ts` still speak it.
+  The route is the translator: it converts that shape to OpenAI-style chat
+  messages going out to OpenRouter, and converts OpenRouter's streamed
+  deltas/tool_calls back into those same blocks coming in. Don't let either
+  side's shape leak past the route.
 - The route answers newline-delimited JSON (`text` / `done` / `error`), not raw
-  Anthropic SSE, so the client doesn't re-implement event parsing.
-- Server-side fallbacks are on. The beta isn't on every account, so a 400 naming
-  it retries once without — see `isFallbackBetaRejection`.
-- Check `stop_reason === "refusal"` before reading content.
+  provider SSE, so the client doesn't re-implement event parsing.
+- `finish_reason` from OpenRouter is mapped to Anthropic-style `stop_reason`
+  (`tool_calls` → `tool_use`, `stop` → `end_turn`, `content_filter` →
+  `refusal`, `length` → `max_tokens`) — see `mapFinishReason`. Check
+  `stop_reason === "refusal"` before reading content.
 - Return **all** `tool_result` blocks in a single user message. Splitting them
   teaches the model to stop calling tools in parallel. A failed tool still gets
   a result, with `is_error` — dropping one leaves the next turn malformed.
-- Echo the assistant's `content` back verbatim, thinking blocks included.
+- Echo the assistant's `content` back verbatim.
 
 Tools live in `src/features/assistant/tools.ts`, shared: the route sends the
 schemas, the browser runs the calls in `execute.ts`.
