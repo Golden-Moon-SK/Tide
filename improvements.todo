@@ -1,4 +1,4 @@
-- [done] Add a bar below which shows keyboard shortcuts for projects, prorities, labels, tags, etc.
-- Add variety between Today, Upcoming, and Inbox. 
-- Add more features in projects. 
-- Code the slash button to always bring the user to the inbox page to enter the todo. 
+✔ [done] Add a bar below which shows keyboard shortcuts for projects, prorities, labels, tags, etc. @done(26-09-25 16:53)
+✔ Add variety between Today, Upcoming, and Inbox. @done(26-09-25 16:53)
+✔ [done] Add more features in projects. Rename, recolour, and delete from the sidebar. @done(26-09-25 16:57)
+✔ Code the slash button to always bring the user to the inbox page to enter the todo. @done(26-09-25 16:55)

@@ -174,6 +174,13 @@ export async function renameProject(id: string, name: string): Promise<void> {
   await db.projects.update(id, { name: name.trim() });
 }
 
+export async function setProjectColor(
+  id: string,
+  color: string,
+): Promise<void> {
+  await db.projects.update(id, { color });
+}
+
 /** Deleting a project moves its tasks to the Inbox rather than destroying them. */
 export async function deleteProject(id: string): Promise<void> {
   if (id === INBOX_ID) return;
