@@ -1,5 +1,6 @@
 import {
   CalendarDays,
+  CalendarRange,
   CheckCircle2,
   Inbox,
   Moon,
@@ -17,6 +18,7 @@ export type SmartView =
   | "inbox"
   | "today"
   | "upcoming"
+  | "calendar"
   | "someday"
   | "completed"
   | "assistant";
@@ -39,6 +41,7 @@ export const SMART_VIEWS: {
   { id: "inbox", label: "Inbox", icon: Inbox },
   { id: "today", label: "Today", icon: Sun },
   { id: "upcoming", label: "Upcoming", icon: CalendarDays },
+  { id: "calendar", label: "Calendar", icon: CalendarRange },
   { id: "someday", label: "Someday", icon: Moon },
   { id: "completed", label: "Completed", icon: CheckCircle2 },
   { id: "assistant", label: "Assistant", icon: Sparkles },

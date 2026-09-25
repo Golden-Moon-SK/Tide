@@ -22,6 +22,42 @@ export function startOfDay(date: Date = new Date()): number {
   return d.getTime();
 }
 
+/**
+ * The week starts on Monday. The calendar grid and the "this week" count both
+ * read this, so a week means the same thing wherever it's asked.
+ */
+export const WEEK_STARTS_ON = 1; // 0 = Sunday, 1 = Monday
+
+export function startOfWeek(date: Date = new Date()): number {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const shift = (d.getDay() - WEEK_STARTS_ON + 7) % 7;
+  d.setDate(d.getDate() - shift);
+  return d.getTime();
+}
+
+export function endOfWeek(date: Date = new Date()): number {
+  const d = new Date(startOfWeek(date));
+  d.setDate(d.getDate() + 6);
+  d.setHours(23, 59, 59, 999);
+  return d.getTime();
+}
+
+export function startOfMonth(date: Date = new Date()): number {
+  const d = new Date(date);
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+export function endOfMonth(date: Date = new Date()): number {
+  const d = new Date(date);
+  // Day 0 of next month is the last day of this one.
+  d.setMonth(d.getMonth() + 1, 0);
+  d.setHours(23, 59, 59, 999);
+  return d.getTime();
+}
+
 /** Open, top-level tasks ordered the way every list orders them. */
 function byListOrder(a: Task, b: Task): number {
   // Dated before undated, earliest first.
@@ -53,6 +89,55 @@ export async function upcomingTasks(): Promise<Task[]> {
   const cutoff = endOfDay();
   const tasks = await db.tasks.where("dueDate").above(cutoff).toArray();
   return tasks.filter(isOpenTopLevel).sort(byListOrder);
+}
+
+/**
+ * Open, dated, top-level tasks whose due date falls inside a window. The
+ * calendar computes the window for whatever month is on screen (including the
+ * trailing days of the weeks either side), so this stays a plain range query.
+ */
+export async function tasksInRange(
+  start: number,
+  end: number,
+): Promise<Task[]> {
+  const tasks = await db.tasks
+    .where("dueDate")
+    .between(start, end, true, true)
+    .toArray();
+  return tasks.filter(isOpenTopLevel).sort(byListOrder);
+}
+
+export interface DueSummary {
+  today: number;
+  week: number;
+  month: number;
+}
+
+/**
+ * How much is due by the end of today, this week, and this month — each a
+ * running total that includes everything overdue, the same way Today does, so
+ * the calendar's summary agrees with the smart lists. The counts nest: today ⊆
+ * week ⊆ month.
+ */
+export async function dueSummary(): Promise<DueSummary> {
+  const todayEnd = endOfDay();
+  const weekEnd = endOfWeek();
+  const monthEnd = endOfMonth();
+  const tasks = (
+    await db.tasks
+      .where("dueDate")
+      .belowOrEqual(Math.max(weekEnd, monthEnd))
+      .toArray()
+  ).filter(isOpenTopLevel);
+
+  const summary: DueSummary = { today: 0, week: 0, month: 0 };
+  for (const task of tasks) {
+    const due = task.dueDate as number;
+    if (due <= todayEnd) summary.today += 1;
+    if (due <= weekEnd) summary.week += 1;
+    if (due <= monthEnd) summary.month += 1;
+  }
+  return summary;
 }
 
 /** Open tasks with no date at all — the pile Todoist hides and Tide shouldn't. */

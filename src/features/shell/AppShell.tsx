@@ -26,6 +26,7 @@ import { TaskList } from "@/features/task-list/TaskList";
 import { TaskDetail } from "@/features/task-detail/TaskDetail";
 import { CommandPalette } from "@/features/command-palette/CommandPalette";
 import { AssistantPanel } from "@/features/assistant/AssistantPanel";
+import { CalendarView } from "@/features/calendar/CalendarView";
 import { Sidebar } from "./Sidebar";
 import { MOBILE_VIEWS, SMART_VIEWS, type SmartView, type View } from "./views";
 
@@ -122,6 +123,8 @@ export function AppShell() {
           emptyHint: "Yet.",
         };
       case "assistant":
+      case "calendar":
+        // Both own their own pane rather than flowing through the task list.
         return { tasks: undefined, sortable: false, emptyTitle: "", emptyHint: "" };
       case "inbox":
         // The inbox is the unsorted pile, not a list like the others: its job is
@@ -316,18 +319,29 @@ export function AppShell() {
         </header>
 
         <main className="min-h-0 flex-1 overflow-y-auto px-4 pt-6 pb-24 lg:px-10 lg:pb-14">
-          <div className="mx-auto w-full max-w-2xl">
-            {view.kind !== "assistant" && view.kind !== "completed" && (
-              <div className="mb-7">
-                <QuickAddBar
-                  projectId={view.kind === "project" ? view.id : undefined}
-                  inputRef={captureRef}
-                />
-              </div>
-            )}
+          <div
+            className={`mx-auto w-full ${
+              view.kind === "calendar" ? "max-w-5xl" : "max-w-2xl"
+            }`}
+          >
+            {view.kind !== "assistant" &&
+              view.kind !== "calendar" &&
+              view.kind !== "completed" && (
+                <div className="mb-7">
+                  <QuickAddBar
+                    projectId={view.kind === "project" ? view.id : undefined}
+                    inputRef={captureRef}
+                  />
+                </div>
+              )}
 
             {view.kind === "assistant" ? (
               <AssistantPanel />
+            ) : view.kind === "calendar" ? (
+              <CalendarView
+                onSelect={select}
+                selectedId={selectedId ?? undefined}
+              />
             ) : (
               list
             )}
