@@ -82,9 +82,17 @@ export function AppShell() {
    * the list, the keyboard cursor, the empty state — reads from this, so they
    * can't drift apart as views are added.
    */
-  const pane = useMemo(() => {
+  const pane: {
+    tasks: Task[] | undefined;
+    sortable: boolean;
+    emptyTitle: string;
+    emptyHint: string;
+    /** A line under the header, so each view announces what it's for. */
+    subtitle?: string;
+  } = useMemo(() => {
     switch (view.kind) {
       case "today":
+        // Today's subtitle is the live date, rendered separately in the header.
         return {
           tasks: today,
           sortable: false,
@@ -95,6 +103,7 @@ export function AppShell() {
         return {
           tasks: upcoming,
           sortable: false,
+          subtitle: "Everything with a date still ahead.",
           emptyTitle: "Nothing scheduled ahead.",
           emptyHint: "The calm kind of empty.",
         };
@@ -114,6 +123,17 @@ export function AppShell() {
         };
       case "assistant":
         return { tasks: undefined, sortable: false, emptyTitle: "", emptyHint: "" };
+      case "inbox":
+        // The inbox is the unsorted pile, not a list like the others: its job is
+        // to be emptied. Frame it as triage — file each task into a project or
+        // give it a date — and celebrate zero rather than call it "nothing here".
+        return {
+          tasks: inProject,
+          sortable: true,
+          subtitle: "Unsorted. Send each task to a project, or give it a date.",
+          emptyTitle: "Inbox zero.",
+          emptyHint: "Everything's been sorted.",
+        };
       default:
         return {
           tasks: inProject,
@@ -285,6 +305,11 @@ export function AppShell() {
             {view.kind === "today" && (
               <p className="text-meta mt-0.5 min-h-lh text-muted">
                 <TodayDate />
+              </p>
+            )}
+            {pane.subtitle && (
+              <p className="text-meta mt-0.5 min-h-lh text-muted">
+                {pane.subtitle}
               </p>
             )}
           </div>
