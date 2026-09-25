@@ -27,7 +27,7 @@ function newId(): string {
 export async function seedIfEmpty(): Promise<void> {
   const existing = await db.projects.get(INBOX_ID);
   if (existing) return;
-  await db.projects.add({
+  await db.projects.put({
     id: INBOX_ID,
     name: "Inbox",
     color: "grey",
