@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { executeToolCalls, type Proposal, type ToolUseBlock } from "./execute";
+import { DEFAULT_MODEL } from "./models";
 
 /**
  * The agent loop, run in the browser.
@@ -43,6 +44,9 @@ export function useAssistant() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [busy, setBusy] = useState(false);
   const [resolved, setResolved] = useState<Record<string, Resolution>>({});
+  // Which model answers. Switching mid-conversation is fine: the history is
+  // provider-neutral content blocks, so the next turn just runs elsewhere.
+  const [model, setModel] = useState<string>(DEFAULT_MODEL);
   const history = useRef<HistoryMessage[]>([]);
   const abort = useRef<AbortController | null>(null);
 
@@ -92,6 +96,7 @@ export function useAssistant() {
         for (let turn = 0; turn < MAX_TURNS; turn += 1) {
           const message = await streamTurn(
             history.current,
+            model,
             controller.signal,
             (chunk) => {
               reply += chunk;
@@ -149,7 +154,7 @@ export function useAssistant() {
         setBusy(false);
       }
     },
-    [busy, patch],
+    [busy, model, patch],
   );
 
   const stop = useCallback(() => abort.current?.abort(), []);
@@ -183,6 +188,8 @@ export function useAssistant() {
     entries,
     busy,
     resolved,
+    model,
+    setModel,
     send,
     stop,
     clear,
@@ -195,13 +202,14 @@ export function useAssistant() {
 /** One request to the relay, decoding its newline-delimited JSON. */
 async function streamTurn(
   messages: HistoryMessage[],
+  model: string,
   signal: AbortSignal,
   onText: (chunk: string) => void,
 ): Promise<ApiMessage> {
   const response = await fetch("/api/assistant", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages, model }),
     signal,
   });
 

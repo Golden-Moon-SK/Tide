@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowUp, RotateCcw, Sparkles, Square } from "lucide-react";
+import { MODELS } from "./models";
 import { ProposalCard } from "./ProposalCard";
 import { useAssistant } from "./useAssistant";
 
@@ -36,6 +37,8 @@ export function AssistantPanel() {
     entries,
     busy,
     resolved,
+    model,
+    setModel,
     send,
     stop,
     clear,
@@ -190,16 +193,32 @@ export function AssistantPanel() {
           </button>
         </div>
 
-        {entries.length > 0 && (
-          <button
-            type="button"
-            onClick={clear}
-            className="text-meta mt-2 inline-flex items-center gap-1.5 text-faint transition-colors hover:text-muted"
+        <div className="mt-2 flex items-center gap-3">
+          <select
+            value={model}
+            onChange={(event) => setModel(event.target.value)}
+            disabled={busy}
+            aria-label="Model"
+            className="text-meta rounded-lg border border-border bg-surface-raised px-2 py-1 text-muted transition-colors hover:border-border-strong hover:text-text focus:border-border-strong focus:outline-none disabled:opacity-60"
           >
-            <RotateCcw aria-hidden className="size-3" strokeWidth={2} />
-            New conversation
-          </button>
-        )}
+            {MODELS.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+
+          {entries.length > 0 && (
+            <button
+              type="button"
+              onClick={clear}
+              className="text-meta inline-flex items-center gap-1.5 text-faint transition-colors hover:text-muted"
+            >
+              <RotateCcw aria-hidden className="size-3" strokeWidth={2} />
+              New conversation
+            </button>
+          )}
+        </div>
       </form>
     </div>
   );

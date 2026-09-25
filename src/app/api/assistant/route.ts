@@ -1,4 +1,5 @@
 import { ALL_TOOLS, systemPrompt, type ToolDef } from "@/features/assistant/tools";
+import { DEFAULT_MODEL, isModelId } from "@/features/assistant/models";
 
 /**
  * The only place OPENROUTER_API_KEY is ever touched.
@@ -22,7 +23,6 @@ import { ALL_TOOLS, systemPrompt, type ToolDef } from "@/features/assistant/tool
 
 export const runtime = "nodejs";
 
-const MODEL = "deepseek/deepseek-v4.1-flash";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 /** Anthropic-shaped content blocks, as the client sends and expects them. */
@@ -38,6 +38,8 @@ interface AnthropicMessage {
 
 interface RequestBody {
   messages: AnthropicMessage[];
+  /** One of the ids in models.ts; anything else falls back to the default. */
+  model?: string;
 }
 
 /** What the client needs back: the content to echo, and why the turn stopped. */
@@ -70,6 +72,10 @@ export async function POST(request: Request) {
     return Response.json({ error: "No messages supplied." }, { status: 400 });
   }
 
+  // Never forward an arbitrary id: the key is the owner's, so the choice is
+  // limited to the models Tide offers.
+  const model = isModelId(body.model) ? body.model : DEFAULT_MODEL;
+
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
@@ -78,7 +84,7 @@ export async function POST(request: Request) {
         controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
 
       try {
-        const message = await runTurn(apiKey, body.messages, send);
+        const message = await runTurn(apiKey, model, body.messages, send);
 
         if (message.stop_reason === "refusal") {
           send({
@@ -125,6 +131,7 @@ interface ToolCall {
 
 async function runTurn(
   apiKey: string,
+  model: string,
   messages: AnthropicMessage[],
   send: Send,
 ): Promise<AssistantMessage> {
@@ -142,7 +149,7 @@ async function runTurn(
       "X-Title": "Tide",
     },
     body: JSON.stringify({
-      model: MODEL,
+      model,
       messages: chatMessages,
       tools: ALL_TOOLS.map(toFunctionTool),
       stream: true,

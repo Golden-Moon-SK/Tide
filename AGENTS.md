@@ -92,7 +92,9 @@ whenever it gets something wrong.
 IndexedDB in the browser and never reach the server, so the agent loop runs
 client-side in `useAssistant`: stream a reply, run any tool calls locally
 against Dexie, post the results back, repeat. The route only talks to
-OpenRouter, model `deepseek/deepseek-v4.1-flash`.
+OpenRouter. The model comes from the browser, validated against `MODELS` in
+`src/features/assistant/models.ts` — `deepseek/deepseek-v4.1-flash` (the
+default) or `z-ai/glm-5.3-flash`, chosen in the picker under the composer.
 
 - `OPENROUTER_API_KEY` comes from `.env.local`, server-side only. It must never
   reach the browser, and `.env.local` is gitignored (`.env.example` is not).
